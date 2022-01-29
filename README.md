@@ -6,3 +6,8 @@ The original plan for the game was to use the shareware model and release a free
 Now, years later I thought it might be nice to at least release what I have and hopefully it will be of interest to anyone looking at what some kid, who played way too much Doom, made in their bedroom in the late 90s.
 
 David
+
+## Help
+
+If you just want to look at source code - check out:
+Source Listings/hellgate-src-v160-19981208-2131-HELLGATE.BAS.txt

@@ -1,0 +1,5 @@
+This folder contains the saved games
+for all users. It is the folder that
+should be backed up, should you need
+to re-install your computer.
+

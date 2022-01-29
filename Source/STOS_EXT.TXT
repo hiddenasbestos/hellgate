@@ -1,0 +1,23 @@
+
+v1.5 and before
+
+Requires the following STOS Extensions:
+
+* 3D.EXS
+* COMPACT.EXA
+* MAESTRO.EXD
+* STE_EXTN.EXF
+
+
+v1.6
+
+Requires the following STOS Extensions:
+
+* COMPACT.EXA
+* MAESTRO.EXD
+* STE_EXTN.EXF
+* 3D.EXT -> STOS3D renamed from 3D.EXS
+* LINK1.EXQ, LINK2.EXR, LINK3.EXS (Missing Link)
+* MISTY.EXM (Misty)
+* CONTROL.EXW
+

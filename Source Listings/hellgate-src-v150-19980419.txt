@@ -1,0 +1,937 @@
+10 rem ***********************************************************************
+11 rem HELLGATE (c) 1996-98 SmartSOFT | Start:[01/08/1996]; v1.00:[10/11/1997]
+12 rem  * (v1.50) By David Walters *  | v1.11:[19/12/1997]; v1.20:[06/01/1998]
+13 rem                                | v1.30:[26/01/1998]; v1.42:[09/04/1998]
+14 rem                                | v1.50:[19/04/1998]
+19 rem ***********************************************************************
+30 click off : on error goto 65000 : break off : REG=0 : SZ=8192 : MXBAD=3 : MXITEM=3 : MXD00R=6 : MXBLOK=8 : FLSTE=0 : FLMUS=0 : P=leek($5A0) : Q=P : if P=0 then 40
+31 C$=hex$(leek(P)) : V$=chr$(val("$"+mid$(C$,2,2)))+chr$(val("$"+mid$(C$,4,2)))+chr$(val("$"+mid$(C$,6,2)))+chr$(val("$"+mid$(C$,8,2))) : V=leek(P+4)
+32 if V$="_SND" then if V=3 then FLMUS=1 : FLSTE=1
+33 if V$="_CPU" then if V>0 then FLSTE=1
+34 P=P+8 : if C$<>"$0" and P<Q+1024 then 31
+40 if mode=1 then hide on : key off : mode 0 : curs off : ST0S=true
+50 if drive>1 then RAM$="" : goto 90
+60 if drvmap<=3 then RAM$="A" : drive=0 : goto 90
+70 if drvmap>3 then F=0 : for I=len(bin$(drvmap))-2 to 2 step-1 : drive=I : A=(dfree/1024) : if A<200 then F=I : I=2
+80 next I : if F>0 then RAM$=chr$(F+65) : drive=0 else RAM$="A" : drive=0
+90 if dir first$("DATA\REG\HELLGATE.WAD",-1)<>"" and dir first$("DATA\REG\HELLGATE.PAK",-1)<>"" then REG=1
+100 if REG then open in #1,"DATA\REG\HELLGATE.WAD" : REGL=lof(#1) : close #1 : if REGL<(10*SZ) then REG=0
+110 MGUN=5 : TIME_START=0 : NUM=7 : HEALTH=666 : MUSON=-1
+120 dim GUN$(MGUN,6),GUN(MGUN,6),FACE$(4),MAPX(15),MAPY(15),PAL(2,6,15)
+130 restore 140 : for I=1 to 15 : read MAPX(I),MAPY(I) : next I
+140 data 100,100,165,124,164,90,195,73,239,92
+150 data 115,120,120,95,177,119,195,76,242,88
+160 data 93,109,177,97,218,104,252,70,154,85
+161 dim BADGUY$(10),BADGUY(10)
+162 for I=1 to 10 : read BADGUY$(I),BADGUY(I) : next I
+163 data "venom",2,"hell",3,"death",4,"mutant",5,"kak",6,"sevor",7,"ssevor",30,"titan",-1,"alacondr",-1,"swdemon",60
+170 auto back off : scroll off 
+180 XX=25 : dim POW_UP$(XX,MXITEM),POW_X(XX,MXITEM),POW_Y(XX,MXITEM),BAD$(XX,MXBAD),BAD_X(XX,MXBAD),BAD_Y(XX,MXBAD),BAD_ANG(XX,MXBAD),BAD_STR(XX,MXBAD),AMMO(MGUN),CHAR(NUM),BRIGHT(XX),VISIT(XX),NUM$(11)
+190 dim BLOK$(XX,MXBLOK),BLOK_X(XX,MXBLOK),BLOK_Y(XX,MXBLOK),BLOK_AY(XX,MXBLOK)
+200 dim D00R(XX,MXD00R),D00R_ROOM(XX,MXD00R),D00R_X(XX,MXD00R),D00R_Z(XX,MXD00R),WALLS(XX,MXD00R)
+220 dac mono : dac speed 0 : dac loop off : sound init : samspeed 6 : samloop off 
+225 if REG=0 and dir first$("DATA\UNREG\HELLBETA.PAK",-1)<>"" then load "DATA\UNREG\HELLBETA.PAK" : goto 270
+230 if REG then load "DATA\REG\HELLGATE.PAK" else load "DATA\UNREG\HELLGATE.PAK"
+270 update off : synchro off 
+280 LEVEL=-1 : AMMO(1)=-1 : AMMO(2)=-1 : AMMO(3)=-1 : AMMO(4)=-1 : GUN=0 : ROOM=0 : MXROOM=0 : SKILL=0 : AMMO(5)=-1
+290 gosub 42000
+300 reserve as screen 2
+310 cls 2 : unpack 4,2 : erase 4 : bcopy 2 to 4
+320 cls 2 : unpack 5,2 : erase 5 : bcopy 2 to 5
+330 cls 2 : unpack 9,2 : erase 9 : GUN$(1,1)=screen$(2,48,0 to 112,60) : GUN$(1,2)=screen$(2,48,100 to 112,160) : GUN(1,1)=48 : GUN(1,2)=48
+340 cls 2 : unpack 13,2 : erase 13 : GUN$(2,1)=screen$(2,32,0 to 128,60) : GUN$(2,2)=screen$(2,32,70 to 128,130) : GUN$(2,3)=screen$(2,32,136 to 128,196) : GUN$(2,4)=screen$(2,160,136 to 320,196) : GUN$(2,5)=screen$(2,160,70 to 320,130) : GUN$(2,6)=screen$(2,160,0 to 320,60) : GUN(2,1)=32 : GUN(2,2)=32 : GUN(2,3)=32
+350 cls 2 : unpack 7,2 : erase 7 : GUN$(3,1)=screen$(2,32,0 to 128,60) : GUN$(3,2)=screen$(2,192,0 to 288,60) : GUN$(3,3)=screen$(2,192,100 to 288,160) : GUN(3,1)=32 : GUN(3,2)=32 : GUN(3,3)=32
+360 cls 2 : unpack 11,2 : erase 11 : GUN$(4,1)=screen$(2,0,0 to 160,160) : GUN$(4,2)=screen$(2,160,0 to 320,160) : GUN$(4,3)=screen$(2,0,100 to 160,160)
+370 if REG then cls 2 : unpack 6,2 : erase 6 : GUN$(5,1)=screen$(2,0,0 to 280,63) : GUN$(5,2)=screen$(2,0,100 to 280,163)
+375 erase 2 : load "data\hellgate.DAT",12 : if FLSTE then dac convert start(12),start(12)+length(12)
+376 td init 140000 : td screen height 151
+377 if REG then if RAM$="" then td dir dir$+"\3D" : else td dir RAM$+":\3D"
+378 if REG=0 then if RAM$="" then td dir dir$+"\3D_" : else td dir RAM$+":\3d_"
+380 reserve as screen 14 : cls 14 : S14=start(14)
+390 reserve as screen 13 : cls 13 : S13=start(13) : S12=start(12) : gosub 10000 : S10=start(5) : S13=start(13) : S14=start(14) : S6=start(4)
+400 for I=1 to 4 : FACE$(I)=screen$(5,I*32+160,100 to I*32+192,130) : next I
+410 for I=0 to 9 : NUM$(I+1)=screen$(5,I*16,109 to (I+1)*16,126) : next I
+420 KY$=screen$(5,160,108 to 192,120) : sprite off 1 : update : cls physic
+425 cls 5,0,0,101 to 320,132
+430 gosub 11000
+440 cls 13 : gosub 3100 : MISSLE=0
+450 logic=back
+460 if FLMUS=0 then MUSON=0
+465 if MUSON then dreg(0)=TRACK : call start(3) : loke $4D2,start(3)+8 else loke $4D2,0 : sound init 
+470 NEMESIS=0
+490 BRIGHT=BRIGHT(ROOM) : gosub 42080
+500 clear key : timer=TIME_START : sprite off : x mouse=159 : y mouse=99
+510 repeat 
+520 FB=(100-y mouse)*50 : LR=(x mouse-160)*45 : M=mouse key : MK=btst(0,M) : STRAFE=btst(1,M) : limit mouse 60,75 to 260,125 : I$=inkey$ : FUNC=scancode
+521 if FUNC=67 then F$="scrn"+str$(rnd(9999))+".pi1" : F$=F$-" " : save F$,physic : MESS$="Screen Shot: "+F$
+525 if FUNC=59 and FLMUS then MUSON=not(MUSON) : if MUSON then dreg(0)=TRACK : call start(3) : loke $4D2,start(3)+8 : MESS$="MUSIC ON" else loke $4D2,0 : sound init : MESS$="MUSIC OFF"
+530 if SHOT=0 and FUNC=57 then gosub 4000 : if LEVELNEXT then 1160
+540 if STRAFE then td angle rel 0,0,16384,0 : td forward 0,LR/3 : td angle rel 0,0,-16384,0 : else td angle rel 0,0,LR,0
+550 td forward 0,FB
+580 if FUNC=61 and SVED=0 then MESS$="NO GAME SAVED!" : FUNC=0
+590 if WALLS(ROOM,0)=1 and (FB or STRAFE) then if td bearing r(0,0,0,0)>WALLS(ROOM,1) then FB=td attitude b(0) : td face 0,0,0,0 : repeat : td forward 0,100 : until td bearing r(0,0,0,0)<=WALLS(ROOM,1) : td angle 0,0,FB,0 : FB=0
+600 if WALLS(ROOM,0)=2 and (FB or STRAFE) then X=td position x(0) : Z=td position z(0) : X=max(min(X,WALLS(ROOM,1)),WALLS(ROOM,3)) : Z=max(min(Z,WALLS(ROOM,2)),WALLS(ROOM,4)) : td move 0,X,0,Z
+610 if IMUNE_COUNT>0 then dec IMUNE_COUNT : if IMUNE_COUNT=0 then BRIGHT=BRIGHT(ROOM) : logic=physic : gosub 42090
+620 if BAD$(ROOM,1)<>"" then N=16 : gosub 1500
+630 if BAD$(ROOM,2)<>"" then N=17 : gosub 1500
+640 if BAD$(ROOM,3)<>"" then N=18 : gosub 1500
+670 if NGUN then 810
+680 if GUN=2 and SHOT and FRAME<6 then inc FRAME : if FRAME=3 and AMMO(2)=0 then SHOT=0 : FRAME=1 : goto 800 else if FRAME=5 then gosub 17184 : goto 800 : else 800
+690 if GUN=3 and SHOT and FRAME<3 then inc FRAME : dec AMMO(3) : AMMO(3)=max(0,AMMO(3)) : goto 800
+700 if GUN=3 and MK and FRAME=3 and AMMO(3)>0 then FRAME=2 : dec AMMO(3) : dac loop on : samloop on : gosub 17196 : goto 800
+710 if GUN=3 and MK=0 and FRAME>1 then dac stop : dac loop off : samstop : samloop off : goto 790
+720 if GUN=4 and SHOT and FRAME<3 then inc FRAME : goto 800
+730 if MK=0 or SHOT=1 then 790
+740 if GUN=1 and AMMO(1)>0 then SHOT=1 : gosub 17178 : dec AMMO(1) : FRAME=2 : goto 810
+750 if GUN=2 and AMMO(2)>0 then SHOT=1 : gosub 17182 : dec AMMO(2) : FRAME=2 : goto 810
+760 if GUN=3 and AMMO(3)>0 then SHOT=1 : dac loop on : samloop on : gosub 17196 : dec AMMO(3) : FRAME=2 : goto 810
+770 if GUN=4 and AMMO(4)>0 then SHOT=1 : gosub 17178 : dec AMMO(4) : FRAME=2 : goto 810
+780 if GUN=5 and AMMO(5)>0 and MISSLE=0 and REG then SHOT=1 : gosub 17186 : dec AMMO(5) : FRAME=2 : MISSLE=1 : MX=td position x(0) : MZ=td position z(0) : MA=td attitude b(0) : td object 9,"rocket",MX,-200,MZ,0,MA,0 : goto 810
+790 SHOT=0 : FRAME=1
+800 if MK and AMMO(GUN)<=0 and FRAME=1 then dac loop off : samloop off : gosub 17184 : gosub 47000
+810 if MISSLE then td forward 9,1200 : if td range(0,9)>=6000 then td kill 9 : MISSLE=0 : gosub 17188
+820 cls logic : td redraw logic : if HEALTH<=0 then 1160
+830 if SC0L>0 then doke $FFFF8240,SC0L : wait vbl : wait vbl : doke $FFFF8240,0 : SC0L=0
+840 td background 5,0,logic,0,82,320,146
+850 if FRAME>1 then 990
+860 if FUNC=0 and NGUN=0 then 980
+870 if NGUN then 940
+880 if FUNC=2 and AMMO(1)>=0 and GUN<>1 then NGUN=1
+890 if FUNC=3 and AMMO(2)>=0 and GUN<>2 then NGUN=2
+900 if FUNC=4 and AMMO(3)>=0 and GUN<>3 then NGUN=3
+910 if FUNC=5 and AMMO(4)>=0 and GUN<>4 then NGUN=4
+920 if FUNC=6 and AMMO(5)>=0 and GUN<>5 and REG then NGUN=5
+930 if FUNC>1 and FUNC<7 then FRAME=1
+940 if NGUN>0 and NGUN_Y<33 then NGUN_Y=NGUN_Y+11 : goto 990
+950 if NGUN>0 and NGUN_Y=33 then NGUN=-NGUN : GUN=-NGUN : dac stop : dac loop off : samstop : samloop off 
+960 if NGUN<0 and NGUN_Y=0 then NGUN=0
+970 if NGUN<0 and NGUN_Y>0 then NGUN_Y=NGUN_Y-11
+980 if NGUN=0 and MK=0 then NGUN_Y=abs(FB)/150
+990 screen$(logic,80+GUN(GUN,FRAME),90+NGUN_Y)=GUN$(GUN,FRAME)
+1000 if NGUN=0 then NGUN_Y=0
+1010 if NGUN<>0 then 1050
+1020 if SHOT and GUN=3 and FRAME=3 then gosub 2000
+1030 if SHOT and FRAME=2 then gosub 2000
+1040 if LEVELNEXT then update : screen swap : sprite off : update : gosub 29000 : gosub 27000 : goto 1160
+1050 gosub 45000 : screen copy 5,0,122,320,166 to logic,0,150
+1060 if FUNC=25 then MESS$="< PAUSED >"
+1070 if MESS$<>"" and MESS_COUNT=0 then MESS_COUNT=10
+1080 if MESS_COUNT>0 then pen 6 : locate 0,19 : centre MESS$ : dec MESS_COUNT
+1090 if MESS_COUNT=0 then MESS$=""
+1100 update : screen swap : sprite off : update 
+1110 if FUNC=25 then loke $4D2,0 : sound init : clear key : TIME_START=timer : repeat : until inkey$="p" : timer=TIME_START : MESS$="" : MESS_COUNT=0 : x mouse=160 : y mouse=100 : if MUSON then dreg(0)=TRACK : call start(3) : loke $4D2,start(3)+8
+1120 if POW_UP$(ROOM,1)<>"" then td angle rel 13,0,3640,0 : N=13 : gosub 46000
+1130 if POW_UP$(ROOM,2)<>"" then td angle rel 14,0,3640,0 : N=14 : gosub 46000
+1140 if POW_UP$(ROOM,3)<>"" then td angle rel 15,0,3640,0 : N=15 : gosub 46000
+1150 if FUNC then clear key 
+1160 until ((FUNC=1 or FUNC=60 or FUNC=61) and MISSLE=0) or HEALTH<=0 or LEVELNEXT : clear key : if LEVELNEXT=0 then TIME_START=timer
+1170 dac stop : dac loop off : samstop : samloop off 
+1175 if LEVELNEXT=3 then EPIS=LEVEL : gosub 15025 : LEVELNEXT=0 : FRAME=1 : goto 460
+1180 if LEVELNEXT=2 then LEVELNEXT=0 : BEGIN=0 : HEALTH=666
+1190 if LEVELNEXT=1 then SHOT=0 : LEVELNEXT=0 : FRAME=1 : goto 460
+1200 if LEVELNEXT then SHOT=0 : LEVELNEXT=0 : TIME_START=0 : KY=0 : FRAME=1 : goto 460
+1210 if HEALTH<=0 then loke $4D2,0 : sound init : wait vbl : gosub 17194 : logic=physic : wait vbl : fade 1,$700,$777,$753,$742,$732,$730,$700,$730,$720,$722,$744,$733,$744,$755,$700,$777 : wait 10 : logic=back : wait vbl : gosub 1700 : fade 1 : wait 10 : gosub 1800 : if ANSWER>-1 then gosub 15500 : goto 1200 : else if ANSWER=-1 then gosub 16000 : LEVELNEXT=0 : clear key : FRAME=1 : goto 460
+1220 loke $4D2,0 : volume 0 : dac stop : samstop : limit mouse : sound init 
+1230 sprite off : wait vbl : update : wait vbl 
+1240 fade 1 : wait 10 : logic=physic : wait vbl 
+1250 clw : sprite off 
+1260 gosub 11051
+1270 fade 1,0,$777,$753,$742,$432,$730,$700,$430,$420,$222,$444,$333,$444,$555,$0,$777 : wait 10
+1280 logic=back : limit mouse 
+1290 goto 460
+1500 B$=BAD$(ROOM,N-15) : if B$="junk" then return 
+1510 BAD=td bearing b(N,0)-td attitude b(N)+32768
+1520 if BAD<-32768 then BAD=65536-BAD
+1530 if BAD>32768 then BAD=BAD-65536
+1535 S=500*SKILL
+1540 if BAD>910 then td angle rel N,0,S,0
+1550 if BAD<-910 then td angle rel N,0,-S,0
+1560 if abs(BAD)<=910 then gosub 3500 : if td bearing r(0)>1500 then td forward N,-100*SKILL
+1570 return 
+1700 td face 0,NEMESIS : gosub 1761
+1705 SHOT=0 : M=0 : MK=0 : FRAME=1
+1710 for I=1 to 5
+1720 td move rel 0,0,-80,0 : td face 0,NEMESIS
+1730 gosub 1761
+1740 next I : wait 50
+1756 return 
+1761 cls logic : td redraw logic
+1762 td background 5,0,logic,0,82,320,146
+1764 gosub 45000 : screen copy 5,0,122,320,166 to logic,0,150
+1765 screen swap
+1767 return 
+1800 ANSWER=1 : if SVED=0 then return 
+1805 logic=physic : fade 1 : wait 10 : clw : colour 1,$700 : wait vbl : pen 1 : locate 0,8 : centre "RELOAD YOUR LAST"
+1806 locate 0,10 : centre "SAVED GAME?   (E"+(str$(((LEVEL_SVE-1)/5)+1)-" ")+"M"+(str$(((LEVEL_SVE-1) mod 5)+1)-" ")+")"
+1810 locate 0,16 : centre "Press Y or N"
+1830 repeat : I$=lower$(inkey$)
+1840 if I$="y" then ANSWER=true
+1850 if I$="n" then ANSWER=false
+1860 until ANSWER<1 : gosub 17178
+1870 locate 0,20 : if ANSWER then centre "YES" else centre "NO"
+1880 fade 1 : wait 10 : clw : logic=back
+1890 return 
+2000 F=0 : BB=0 : BI=0 : BIR=1000000 : for I=1 to MXBAD
+2040 if BAD$(ROOM,I)="" or BAD$(ROOM,I)="junk" then 2120
+2050 if td visible(I+15)=0 then 2120
+2070 B=td bearing b(0,I+15)-td attitude b(0)
+2090 if B<-32768 then B=-B-65536
+2100 if abs(B)>800 then 2120
+2110 if td range(0,I+15)<BIR then BI=I : BIR=td range(0,I+15) : BB=abs(B)
+2120 next I
+2130 if BI=0 then 2200
+2140 if GUN=1 then T=1 : goto 2148
+2144 if GUN=2 then T=4 : goto 2148
+2145 if GUN=3 then T=2 : goto 2148
+2146 if GUN=4 then T=6 : goto 2148
+2147 if GUN=5 and REG then T=10 : F=1
+2148 if BB<400 or GUN=5 then BAD_STR(ROOM,BI)=BAD_STR(ROOM,BI)-T
+2149 if BB>=400 and GUN<>5 then BAD_STR(ROOM,BI)=BAD_STR(ROOM,BI)-(T+1)/2
+2151 S=1 : if BAD_STR(ROOM,BI)<=0 then gosub 17180 : B$=BAD$(ROOM,BI) : gosub 2500 : if S<3 then BAD$(ROOM,BI)="junk" : inc DEATHS : if NEMESIS<>BI+15 then X=td position x(BI+15) : Z=td position z(BI+15) : td kill BI+15 : td object BI+15,"junk",X,0,Z,rnd(65530),rnd(65530),rnd(65530) : td move y BI+15,"(1,-100,4)"
+2155 if F=1 then td kill 9 : MISSLE=0 : SC0L=$433 : gosub 3000 : F=0 : gosub 17188
+2160 if S<3 then sprite BI,157+rnd(6),72+rnd(6),S : gosub 2205 : goto 2170
+2161 gosub 1761 : screen copy physic to back
+2165 inc DEATHS : for I=1 to 40 : sprite BI,100+rnd(120),52+rnd(46),rnd(1)+1 : update : wait 3 : screen swap : wait vbl : gosub 17182 : next I : gosub 17194
+2170 return 
+2200 if GUN=1 or GUN=3 or GUN=4 then sprite 10,157+rnd(6),75+rnd(6),4 : goto 2210
+2205 if GUN=2 then for I=1 to 4 : sprite 10+I,136+rnd(6)*8,74+rnd(6),5+rnd(1) : next I
+2210 return 
+2500 S=2 : if B$="ssevor" or B$="titan" or B$="alacondr" or B$="swdemon" then S=3 : B$="" : LEVELNEXT=1
+2510 return 
+3000 doke $FFFF8240,SC0L : wait vbl : wait vbl 
+3050 doke $FFFF8240,0 : SC0L=0
+3060 return 
+3100 loke $45A,hunt(start(1) to start(1)+length(1),"PALT")+4
+3110 return 
+3200 cls physic : cls back : logic=physic : wait vbl 
+3201 gosub 3100
+3205 sprite 1,207,107,8 : update : put sprite 1
+3210 pen 6 : locate 12,12 : print "Loading...";
+3220 return 
+3500 R=td range(0,N) : HR=(R/500)+4
+3540 if rnd(HR)<=SKILL*2 and IMUNE_COUNT<=0 then SC0L=$730 : STN=(BAD_STR(ROOM,N-15))+rnd(3) : gosub 5000 : gosub 17194 : else if rnd(1) then gosub 17190
+3550 return 
+4000 F=0 : for I=1 to D00R(ROOM,0) : D=D00R(ROOM,I)
+4001 if td range(0,D)>3000 then 4020
+4002 D2=td bearing b(0,D)-td attitude b(0)
+4003 if D2<-32768 then D2=65536-D2
+4004 if D2>65536 then D2=D2-65536 : goto 4004
+4010 D2=abs(D2) : if D2>58000 or D2<7500 then F=I : I=D00R(ROOM,0)
+4020 next I : if F=0 then 4150
+4025 FB=0
+4040 if D00R_ROOM(ROOM,F)=-1 then gosub 29000 : gosub 27000 : goto 4150
+4045 if D00R_ROOM(ROOM,F)=-2 then gosub 29000 : LEVEL=D00R_X(ROOM,F)-1 : gosub 27000 : goto 4150
+4050 if (BLOK$(ROOM,D00R(ROOM,F))="lockx3" or BLOK$(ROOM,D00R(ROOM,F))="brwnlock") and KY=0 then MESS$="YOU NEED A KEY TO OPEN THIS DOOR" : goto 4140
+4060 if BLOK$(ROOM,D00R(ROOM,F))="lockx3" and KY then BLOK$(ROOM,D00R(ROOM,F))="doorx3" : KY=0
+4070 if BLOK$(ROOM,D00R(ROOM,F))="brwnlock" and KY then BLOK$(ROOM,D00R(ROOM,F))="brwndoor" : KY=0
+4080 if instr(BLOK$(ROOM,D00R(ROOM,F)),"door")=0 then MESS$="A SECRET PLACE!"
+4090 gosub 17192
+4100 td move 0,D00R_X(ROOM,F),0,D00R_Z(ROOM,F)
+4120 gosub 41000
+4130 ROOM=D00R_ROOM(ROOM,F) : gosub 40000
+4140 F=0 : FB=0
+4150 return 
+5000 STN=STN/2 : if STN<1 then STN=1
+5040 if ARMOUR>=STN then ARMOUR=ARMOUR-STN
+5050 HEALTH=HEALTH-STN
+5060 if ARMOUR<STN# and ARMOUR>0 then A=ARMOUR : ARMOUR=0 : HEALTH=HEALTH-A : A=0 : goto 5080
+5070 if ARMOUR=0 then HEALTH=HEALTH-STN
+5080 STN=0 : HEALTH=max(0,HEALTH)
+5085 if HEALTH=0 then NEMESIS=N
+5090 return 
+10000 screen copy physic to 14
+10040 def scroll 1,0,0 to 320,160,0,1
+10050 for I=1 to 16 : scroll 1 : cls logic,0,0,0 to 320,1 : next I
+10060 NUM=7 : GAP=32 : clear key 
+10070 for I=1 to NUM : CHAR(I)=-1 : next I
+10080 screen copy logic to S13 : screen copy logic to back : wait vbl 
+10090 pen 1 : home : cdown : centre "ENTER THY NAME..."
+10100 ink 0 : bar 46,20 to 273,39 : ink 1 : box 47,21 to 272,38 : wait vbl 
+10110 screen copy logic to S13 : screen copy logic to back : wait vbl 
+10120 gosub 17176
+10130 XO=0 : XPOS=64 : YPOS=30 : D=2
+10136 timer=0
+10140 SIZE=10
+10150 I$=upper$(inkey$) : if timer>700 then timer=0 : gosub 17176
+10156 if I$="" then 10150
+10157 gosub 17190
+10160 A=asc(I$) : if (A<65 or A>90) and A<>8 and A<>13 then 10150
+10170 if A=8 and XO>0 then XO=XO-GAP : cls S13,0,XPOS+XO-8,YPOS-7 to XPOS+XO+16,YPOS+7 : cls physic,0,XPOS+XO-8,YPOS-7 to XPOS+XO+16,YPOS+7 : D=-D : SIZE=2 : CHAR=CHAR(XO/GAP) : CHAR(XO/GAP)=-1 : goto 10230
+10180 if A=8 then 10140
+10190 if A=13 and XO>0 then 10420
+10200 if A=13 then 10150
+10210 CHAR=A-65
+10220 CHAR(XO/GAP)=CHAR : clear key 
+10230 logic=back
+10240 screen copy S13 to logic
+10250 restore 10460+CHAR*10
+10260 read N
+10270 for I=1 to N
+10280 read X1,Y1,X2,Y2
+10290 draw XPOS+XO+X1*SIZE,YPOS+Y1*SIZE/2 to XPOS+XO+X2*SIZE,YPOS+Y2*SIZE/2
+10300 next I
+10310 screen swap : SIZE=SIZE-D
+10320 if SIZE<=0 then 10350
+10330 if SIZE>10 then 10360
+10340 goto 10240
+10350 screen$(13,0,0)=screen$(physic,0,0 to 320,100)
+10360 if D<0 then D=-D : screen copy S13 to physic : goto 10380
+10370 XO=XO+GAP : if XO=NUM*GAP then 10390
+10380 goto 10140
+10390 I$=inkey$ : if I$=chr$(13) then 10420
+10400 if I$=chr$(8) then A=8 : goto 10170
+10410 goto 10390
+10420 NAME$="" : for I=1 to NUM : A$=chr$(CHAR(I-1)+65) : if A$="@" then A$=""
+10430 NAME$=NAME$+A$ : next I
+10440 BEGIN=0 : SVED=0
+10450 dac stop : fade 7 : wait 50 : cls physic : cls back : wait vbl : logic=physic : wait vbl : curs off : return 
+10460 data 3,-5,5,0,-5,0,-5,5,5,-2,0,2,0
+10470 data 5,-5,-5,-5,5,-5,-5,5,-2,5,-2,-5,0,-5,0,5,2,5,2,-5,5
+10480 data 3,-5,-5,-5,5,-5,-5,5,-5,-5,5,5,5
+10490 data 3,-5,-5,-5,5,-5,-5,5,0,5,0,-5,5
+10500 data 4,-5,-5,-5,5,-5,-5,5,-5,-5,0,2,0,-5,5,5,5
+10510 data 3,-5,-5,-5,5,-5,-5,5,-5,-5,0,2,0
+10520 data 4,-5,-5,-5,5,-5,-5,5,-5,-5,5,5,5,5,5,5,2
+10530 data 3,-5,-5,-5,5,5,-5,5,5,-5,0,5,0
+10540 data 3,-2,-5,2,-5,0,-5,0,5,-2,5,2,5
+10550 data 3,-1,-5,3,-5,1,-5,1,5,-3,5,1,5
+10560 data 3,-5,-5,-5,5,-5,0,5,-5,-5,0,5,5
+10570 data 2,-5,-5,-5,5,-5,5,5,5
+10580 data 4,-5,5,-5,-5,-5,-5,0,0,0,0,5,-5,5,-5,5,5
+10590 data 3,-5,5,-5,-5,-5,-5,5,5,5,5,5,-5
+10600 data 4,-5,-5,5,-5,5,-5,5,5,5,5,-5,5,-5,5,-5,-5
+10610 data 4,-5,-5,-5,5,-5,-5,5,-5,5,-5,5,0,5,0,-5,0
+10620 data 5,-5,-5,5,-5,5,-5,5,5,5,5,-5,5,-5,5,-5,-5,5,5,2,2
+10630 data 5,-5,-5,-5,5,-5,-5,5,-5,5,-5,5,0,5,0,-5,0,-5,0,5,5
+10640 data 5,5,-5,-5,-5,-5,-5,-5,0,-5,0,5,0,5,0,5,5,5,5,-5,5
+10650 data 2,-5,-5,5,-5,0,-5,0,5
+10660 data 3,5,-5,5,5,5,5,-5,5,-5,5,-5,-5
+10670 data 2,-5,-5,0,5,0,5,5,-5
+10680 data 4,-5,-5,-2,5,-2,5,0,-5,0,-5,2,5,2,5,5,-5
+10690 data 2,-5,-5,5,5,-5,5,5,-5
+10700 data 3,-5,-5,0,0,0,0,5,-5,0,0,0,5
+10710 data 3,-5,-5,5,-5,5,-5,-5,5,-5,5,5,5
+10800 colour 1,$700 : wait vbl : pen 1 : locate 0,10 : centre "CREATE NEW USER '"+NAME$+"'"
+10840 locate 0,12 : centre "ARE YOU SURE? (Y or N)"
+10845 ANSWER=1
+10850 repeat : I$=lower$(inkey$)
+10860 if I$="y" then ANSWER=true
+10870 if I$="n" then ANSWER=false
+10880 until ANSWER<1
+10885 locate 0,20 : if ANSWER then centre "YES" else centre "NO"
+10886 fade 1 : wait 10 : clw 
+10890 return 
+11000 USER$=dir first$("_"+NAME$+".SAV",-1)
+11040 if USER$="" then gosub 10800 : if ANSWER then gosub 12000 : goto 11050
+11045 if USER$="" and ANSWER=0 then hide on : screen copy 14 to physic : screen copy 14 to back : fade 1 to 14 : wait 30 : gosub 10000 : goto 11000
+11049 if USER$<>"" then open in #1,"_"+NAME$+".SAV" : L=lof(#1) : close #1 : if L>50 then SVED=-1 else SVED=0
+11050 if SVED then open in #1,"_"+NAME$+".SAV" : input #1,LAMER$ : input #1,LAMER$ : input #1,LAMER$ : close #1 : LEVEL_SVE=asc(LAMER$)
+11051 fade 1 : wait 10 : screen copy S6 to back : screen copy S6 to physic : change mouse 6 : show on : if FLMUS then dreg(0)=9 : call start(3) : loke $4D2,start(3)+8
+11052 dac loop off : dac stop : samstop : samloop off 
+11053 if FUNC=60 or FUNC=61 then pen 14 : paper 0 : Y=63-FUNC : get palette (4) : wait vbl : clear key : goto 11141
+11055 if FUNC=60 or FUNC=61 then FUNC=0 : goto 11890
+11056 paper 0 : pen 1 : locate 11,14 : print string$(chr$(198),18);
+11057 if BEGIN then locate 0,23 : centre "Press <ESC> again" : cdown : centre "to resume play."
+11058 locate 0,2 : centre "Choose an option"
+11059 locate 0,3 : centre "Special agent "+NAME$+"." : pen 14
+11060 locate 36,24 : if FLSTE then print " ste"; else print "stfm";
+11065 if BEGIN then locate 0,12 : centre "SAVE GAME" else shade on : locate 0,12 : centre "SAVE GAME" : shade off 
+11070 if SVED then locate 0,10 : centre "LOAD (E"+(str$(((LEVEL_SVE-1)/5)+1)-" ")+"M"+(str$(((LEVEL_SVE-1) mod 5)+1)-" ")+")" else locate 0,10 : shade on : centre "LOAD" : shade off 
+11075 locate 0,8 : centre "NEW GAME"
+11076 locate 0,16 : if FLMUS then if MUSON then centre " MUSIC - ON " else centre " MUSIC - OFF" : else shade on : centre "  NO MUSIC  " : shade off 
+11077 locate 0,18 : centre "TITLE SCREEN"
+11079 get palette (4) : wait vbl : clear key 
+11080 X=x mouse : Y=y mouse : M=mouse key : I$=inkey$
+11082 if BEGIN and asc(I$)=27 then 11890
+11085 if M<>1 then 11080
+11090 if X<80 or X>240 then 11080
+11100 if Y<56 or Y>148 then 11080
+11130 Y=((Y-8)/16)-2 : if Y=4 then if ST0S then 20010 else 11080
+11131 if SVED=0 and Y=2 then 11080
+11132 if BEGIN=0 and Y=3 then 11080
+11135 pen 1 : inverse on : for I=11 to 28 : P=scrn(I,Y*2+6) : locate I,(Y*2)+6 : print chr$(P); : next I : inverse off : pen 14 : gosub 17178
+11136 for I=11 to 28 : P=scrn(I,Y*2+6) : locate I,(Y*2)+6 : print chr$(P); : next I
+11138 if Y=6 then RU_SURE1$="Go back to the" : RU_SURE2$="title screen?" : gosub 18000 : if RESULT then hide on : loke $4D2,0 : sound init : fade 1 : wait 10 : screen copy 14 to physic : screen copy 14 to back : fade 1 to 14 : wait 30 : gosub 10000 : goto 11000 else 11055
+11139 if Y=1 then gosub 15000 : if MEN=0 then 11890 else MEN=0 : goto 11055
+11141 if Y=2 and SVED then RU_SURE1$="Load your old" : RU_SURE2$="game? (E"+(str$(((LEVEL_SVE-1)/5)+1)-" ")+"M"+(str$(((LEVEL_SVE-1) mod 5)+1)-" ")+")" : gosub 18000 : if RESULT then gosub 16000 : goto 11890 else 11055
+11142 if Y=2 and SVED then 11055
+11143 if Y=3 and BEGIN then RU_SURE1$="Save the current" : RU_SURE2$="game?" : gosub 18000 : if RESULT then locate 0,12 : centre "Saving...." : gosub 14000 : centre "           " : goto 11055
+11144 if Y=3 and BEGIN and RESULT=0 then 11055
+11150 if Y=5 then MUSON=not(MUSON) : goto 11055
+11810 goto 11080
+11890 hide on : fade 1 : wait 10 : cls physic : cls back : cls 13
+11900 loke $4D2,0 : sound init : return 
+12000 open out #1,"_"+NAME$+".SAV" : print #1,NAME$ : print #1,"NO GAME SAVED"
+12220 close #1
+12230 return : SVED=0 : BEGIN=0
+13000 open in #1,"_"+NAME$+".SAV"
+13110 input #1,NAME$
+13111 input #1,LAMER$
+13115 input #1,A$ : LEVEL=asc(A$)
+13116 input #1,A$ : GUN=asc(A$)
+13117 input #1,AMMO(1)
+13118 input #1,AMMO(2)
+13119 input #1,AMMO(3)
+13120 input #1,AMMO(4)
+13121 input #1,AMMO(5)
+13125 input #1,ANG
+13130 input #1,XP
+13140 input #1,ZP
+13150 input #1,ROOM_SVE
+13160 input #1,KY
+13170 input #1,HEALTH
+13180 input #1,ARMOUR
+13190 input #1,A$ : SKILL=asc(A$)
+13210 input #1,TIME_START
+13211 gosub 30000
+13215 gosub 44000
+13216 input #1,DEATHS
+13217 for I=1 to MXROOM : input #1,VISIT(I) : next I
+13218 input #1,IMUNE_COUNT
+13220 close #1 : SVED=-1
+13230 return 
+14000 open out #1,"_"+NAME$+".SAV"
+14040 print #1,NAME$
+14041 print #1,"CHEATING DOESN'T PAY!"
+14045 print #1,chr$(LEVEL)
+14046 print #1,chr$(GUN)
+14047 print #1,AMMO(1)
+14048 print #1,AMMO(2)
+14049 print #1,AMMO(3)
+14050 print #1,AMMO(4)
+14051 print #1,AMMO(5)
+14055 print #1,td attitude b(0)
+14060 print #1,td position x(0)
+14070 print #1,td position z(0)
+14080 print #1,ROOM
+14090 print #1,KY
+14100 print #1,HEALTH
+14110 print #1,ARMOUR
+14120 print #1,chr$(SKILL)
+14140 print #1,TIME_START
+14150 gosub 43000
+14160 print #1,DEATHS
+14170 for I=1 to MXROOM : print #1,VISIT(I) : next I
+14180 print #1,IMUNE_COUNT
+14250 close #1 : SVED=true : LEVEL_SVE=LEVEL
+14270 return 
+15000 gosub 17000 : if MEN=-1 then return 
+15024 gosub 15100
+15025 hide on : MESS$="" : MESS_COUNT=0
+15040 GUN=1 : FRAME=1 : NGUN=0 : AMMO(1)=50 : AMMO(2)=-1 : AMMO(3)=-1 : AMMO(4)=-1 : KY=0 : HEALTH=100 : ARMOUR=0 : IMUNE_COUNT=0 : AMMO(5)=-1
+15050 LEVEL=EPIS : fade 1 : wait 10 : gosub 50000 : INFO=((EPIS-1)/5)+1 : gosub 21000 : gosub 30000 : ROOM=ROOM_ST : gosub 40000 : TIME_START=0
+15055 NGUN=-GUN : NGUN_Y=33 : SC0L=0
+15060 return 
+15100 fade 1 : wait 10 : hide on : EPIS=1 : F1=0 : F2=0 : pen 1
+15110 unpack 8,back : unpack 8,physic : wait vbl 
+15117 screen copy physic to back
+15120 fade 3 to back : wait 27
+15125 x mouse=80 : y mouse=50 : X#=0 : Y=0
+15130 repeat : if REG=0 then 15160
+15131 X#=x mouse : Y=y mouse : I$=inkey$
+15135 if I$=")" then F1=1
+15136 if I$="!" then F1=2
+15137 if val(I$)>0 then locate 37,23 : print val(I$); : F2=val(I$)
+15140 if X#<160 then X#=0 else X#=1
+15150 if Y<100 then Y=0 else Y=1 : X#=0.5
+15160 ink 15 : box X#*159,Y*99 to X#*159+160,Y*99+95 : wait 2
+15165 ink 0 : box X#*159,Y*99 to X#*159+160,Y*99+95 : wait 2
+15170 until mouse key : gosub 17184
+15180 if X#<1 and Y=0 then EPIS=1
+15190 if X#=1 and Y=0 then EPIS=6
+15200 if Y=1 then EPIS=11
+15210 if F1 then EPIS=(F1*10)+F2-10 : LEVEL=EPIS
+15220 fade 1 : wait 10 : clw 
+15230 return 
+15500 gosub 41000
+15504 gosub 3200
+15510 MESS$="" : MESS_COUNT=0
+15520 if FLMUS then dreg(0)=2 : call start(3) : loke $4D2,start(3)+8
+15540 gosub 30000 : ROOM=ROOM_ST : gosub 40000
+15545 GUN=1 : FRAME=1 : NGUN=0 : AMMO(1)=50 : AMMO(2)=-1 : AMMO(3)=-1 : AMMO(4)=-1 : AMMO(5)=-1 : KY=0 : HEALTH=100 : ARMOUR=0 : IMUNE_COUNT=0
+15550 NGUN=-GUN : NGUN_Y=33 : SC0L=0
+15560 TIME_START=0 : LEVELNEXT=true : sprite off : update : return 
+16000 hide on : MESS$="" : MESS_COUNT=0 : MISSLE=0
+16010 open in #1,"_"+NAME$+".SAV"
+16020 input #1,LAMER$
+16030 input #1,LAMER$
+16035 input #1,A$ : LEVEL=asc(A$) : LEVEL_SVE=LEVEL
+16036 close #1
+16040 if FLMUS then dreg(0)=2 : call start(3) : loke $4D2,start(3)+8
+16042 gosub 50000 : gosub 13000 : ROOM=ROOM_SVE : NGUN=0
+16045 td angle 0,0,ANG,0 : td move 0,XP,0,ZP : gosub 40000
+16046 FRAME=1 : SC0L=0
+16050 return 
+17000 hide on : ink 0 : for I=6 to 20 : locate 11,I : print space$(18); : next I : show on 
+17040 pen 1 : inverse on : locate 0,7 : centre "                  " : cdown : centre "  SELECT A SKILL  "
+17050 cdown : centre "     SETTING.     " : cdown : centre "                  " : inverse off : pen 14
+17060 locate 0,13 : centre "DEAD EASY"
+17070 locate 0,15 : centre "WELL 'ARD"
+17080 locate 0,17 : centre "SUICIDE"
+17085 pen 1 : locate 0,19 : centre string$(chr$(198),18) : pen 14
+17086 locate 0,20 : centre "MAIN MENU"
+17090 repeat : Y=y mouse : X=x mouse : M=mouse key
+17100 I$=inkey$ : until M=1 or I$=chr$(27)
+17105 if I$=chr$(27) then M=20 : goto 17205
+17110 M=Y/8
+17120 if X<80 or X>240 then 17090
+17130 if M=13 then SKILL=1 : goto 17200
+17140 if M=15 then SKILL=2 : goto 17200
+17150 if M=17 then gosub 17178 : pen 1 : inverse on : for I=11 to 28 : P=scrn(I,M) : locate I,M : print chr$(P); : next I : inverse off : pen 14 : RU_SURE1$="This skill setting" : RU_SURE2$="is for EXPERTS!" : gosub 18000 : if RESULT then SKILL=3 : goto 17210 else 17040
+17160 if M=20 then 17200
+17170 goto 17090
+17176 if FLSTE then dac raw S12+14000,S12+35000 : else samraw S12+14000,S12+35000
+17177 return 
+17178 if FLSTE then dac raw S12+256,S12+3000 : else samraw S12+256,S12+3000
+17179 return 
+17180 if FLSTE then dac raw S12+3500,S12+8000 : else samraw S12+3500,S12+8000
+17181 return 
+17182 if FLSTE then dac raw S12+8000,S12+12000 : else samraw S12+8000,S12+12000
+17183 return 
+17184 if FLSTE then dac raw S12+12000,S12+14000 : else samraw S12+12000,S12+14000
+17185 return 
+17186 if FLSTE then dac raw S12+35000,S12+37500 : else samraw S12+35000,S12+37500
+17187 return 
+17188 if FLSTE then dac raw S12+38000,S12+46200 : else samraw S12+38000,S12+46200
+17189 return 
+17190 if FLSTE then dac raw S12+46300,S12+48450 : else samraw S12+46300,S12+48450
+17191 return 
+17192 if FLSTE then dac raw S12+49000,S12+54500 : else samraw S12+49000,S12+54500
+17193 return 
+17194 if FLSTE then dac raw S12+55000,S12+65000 : else samraw S12+55000,S12+65000
+17195 return 
+17196 if FLSTE then dac raw S12+65000,S12+67000 : else samraw S12+65000,S12+67000
+17197 return 
+17198 if FLSTE then dac raw S12+67000,S12+81000 : else samraw S12+67000,S12+81000
+17199 return 
+17200 MEN=0 : pen 1 : inverse on : for I=11 to 28 : P=scrn(I,M) : locate I,M : print chr$(P); : next I : inverse off : pen 14 : gosub 17190
+17205 if M=20 then wait 1 : hide on : ink 0 : for I=6 to 20 : locate 11,I : print space$(18); : next I : show on : wait 1 : MEN=-1
+17210 return 
+18000 hide on : ink 0 : for I=6 to 20 : locate 11,I : print space$(18); : next I : show on : RESULT=0
+18040 pen 1 : inverse on : locate 0,7 : centre "                  "
+18050 cdown : centre "   ARE YOU SURE   " : cdown : centre "                  " : inverse off : pen 14
+18060 locate 0,11 : centre RU_SURE1$
+18070 locate 0,12 : centre RU_SURE2$
+18080 locate 0,15 : centre "YES"
+18090 locate 0,17 : centre "NO "
+18100 repeat : YM=y mouse : X=x mouse : M=mouse key
+18110 I$=lower$(inkey$) : until M=1 or I$=chr$(27) or I$="y" or I$="n"
+18115 if I$=chr$(27) then RESULT=false : goto 18180
+18120 M=YM/8
+18130 if X<80 or X>240 then 18100
+18140 if M=15 or I$="y" then M=15 : RESULT=true : goto 18170
+18150 if M=17 or I$="n" then M=17 : RESULT=false : goto 18170
+18160 goto 18100
+18170 MEN=0 : pen 1 : inverse on : for I=11 to 28 : P=scrn(I,M) : locate I,M : print chr$(P); : next I : inverse off : pen 14 : gosub 17190
+18180 wait 1 : hide on : ink 0 : for I=6 to 20 : locate 11,I : print space$(18); : next I : show on : wait 1
+18190 return 
+20000 goto 20000
+20010 hide on : fade 1 : wait 10 : logic=physic
+20022 clear key : cls physic : cls back
+20026 loke $4D2,0 : sound init 
+20031 dac stop : samstop : sound init 
+20040 if ST0S=true then erase 1 : erase 3 : erase 5 : erase 8 : erase 10 : erase 12 : default : end 
+20050 end 
+21000 if INFO<1 or INFO>6 then return 
+21010 SPEED=0 : SP=0
+21031 if FLMUS then dreg(0)=2 : call start(3) : loke $4D2,start(3)+8
+21035 hide on : fade 3 : wait 30 : clw : clear key 
+21050 gosub 21420
+21051 wait vbl : fade 1,$0,$0,$555,$444,$0,$200,$300
+21055 if INFO=1 then restore 21270
+21056 if INFO=2 then restore 23000
+21057 if INFO=3 then restore 24000
+21059 if INFO=4 and SKILL=1 then restore 25000
+21060 if INFO=4 and SKILL>1 then restore 25500
+21061 if INFO=5 then restore 23100
+21065 pen 1 : colour 1,$777
+21070 read A$
+21080 if A$="*** END ***" then repeat : until inkey$<>"" or mouse key>0 : fade 1 : wait 10 : home : paper 0 : clw : return 
+21090 A$=A$+"     "
+21100 for I=1 to len(A$)
+21110 B$=mid$(A$,I,1)
+21120 if xcurs=39 then 21150
+21130 if B$=" " then print tab(1); : goto 21150
+21140 pen 2 : print B$;
+21150 if SPEED=1 then 21230
+21160 X=I : Y=ycurs
+21170 for J=1 to 2
+21180 XP=X-J : if XP<0 or XP>39 then J=4 : goto 21210
+21190 locate XP,Y : Z$=chr$(scrn(XP,Y)) : if Z$=" " then print tab(1); else pen J : print Z$;
+21210 next J : wait 1
+21220 if I<40 then locate X,Y
+21230 next I
+21240 if INFO<4 and (inkey$<>"" or mouse key>0) then SPEED=1
+21250 print 
+21260 goto 21070
+21270 data ""
+21280 data "               EPISODE 1",""
+21290 data " It is the year 2196. You are a special"
+21300 data " operative based on the planet Neptune"
+21310 data " which was terraformed almost twenty"
+21320 data " years ago.",""
+21330 data " Your current mission is to investigate"
+21340 data " the  recent  increase  in  crime  in"
+21350 data " Neptune's largest city Metroville. All"
+21360 data " clues  point to the large  warehouse"
+21370 data " complex on the edge of the city.",""
+21380 data " You set off at once to investigate...."
+21390 data "","","","","","","",""
+21400 data "             Press any key.."
+21410 data "*** END ***"
+21420 wait vbl : fade 1 : wait 10 : sprite off : update 
+21430 set paint 1,1,1 : ink 5 : bar 0,0 to 319,199
+21460 set paint 2,10,0
+21470 gr writing 2
+21480 ink 6 : bar 1,1 to 318,199
+21490 gr writing 1 : paper 5 : pen 0
+21500 return 
+23000 data ""
+23010 data "               EPISODE 2",""
+23020 data " With SUPER SEVOR gone, your quest is"
+23030 data " now much easier.",""
+23050 data " That is  until you  find plans in  his"
+23060 data " base for an invasion force lead by the"
+23070 data " huge robot, TITAN WARRIOR.",""
+23080 data " You  decide  to make a  pre-emptive"
+23082 data " strike on the robot hoards. You must"
+23083 data " act quickly,  Neptune lies in  your"
+23084 data " hands..."
+23085 data "","","","","","","","",""
+23090 data "             Press any key.."
+23099 data "*** END ***"
+23100 data ""
+23110 data "               WELL DONE",""
+23120 data " You have suceeded, your quest is over!"
+23130 data " Or so you thought...",""
+23150 data " You find plans in  SUPER SEVOR'S  base"
+23160 data " for a mighty invasion force lead by"
+23170 data " the huge robot,  TITAN WARRIOR. ",""
+23180 data " You must play the next two exciting"
+23181 data " episodes to stop this attack and save"
+23184 data " Neptune from certain doom...."
+23185 data "","","","","","","","","",""
+23190 data "             Press any key.."
+23199 data "*** END ***"
+24000 data ""
+24010 data "               EPISODE 3",""
+24020 data " TITAN  WARRIOR'S  invasion  force  has"
+24030 data " been crushed.",""
+24050 data " Your  last  challenge  is  the  mighty"
+24060 data " ALACONDER!",""
+24070 data " Your quest is nearly over....","",""
+24080 data " Isn't it?????"
+24985 data "","","","","","","","",""
+24990 data "             Press any key.."
+24999 data "*** END ***"
+25000 data ""
+25010 data "               WELL DONE",""
+25020 data " Congratulations, you have reduced the"
+25030 data " evil  crime lord  ALACONDER to scrap"
+25050 data " metal and saved Neptune.",""
+25060 data " Or so you think....",""
+25070 data " ALACONDERS last words were:",""
+25080 data "  "+chr$(34)+"I may have been defeated, but the"
+25081 data "   SWAMP DEMON will destroy you foolish"
+25082 data "   mortals!"+chr$(34)
+25083 data ""," Try the WELL'ARD or SUICIDE skill"
+25084 data " levels to uncover the truth...."
+25085 data "","","","","",""
+25090 data "             Press any key.."
+25099 data "*** END ***"
+25500 data ""
+25510 data "               WELL DONE",""
+25520 data " As the foul  ALACONDER explodes  into"
+25530 data " piles of scrap metal, it invokes the"
+25550 data " sacred litany to summon the diabolical"
+25560 data " SWAMP DEMON to the mortal plane.",""
+25570 data " You hear a rumbling in the distance,"
+25580 data " rushing  outside,  you  see  the  true"
+25581 data " nature of the evil that has awoken."
+25582 data " The temple on top of the hill is now"
+25583 data " domain of the SWAMP DEMON overlord!",""
+25584 data " You make  haste  up the  hillside  to"
+25585 data " finish this once and for all....","","","","","","",""
+25590 data "             Press any key.."
+25599 data "*** END ***"
+27000 inc LEVEL
+27005 if LEVEL=6 and REG=0 then INFO=5 : gosub 21000 : LEVELNEXT=2 : return 
+27010 if LEVEL=15 then gosub 35000 : LEVELNEXT=2 : return 
+27015 if LEVEL=14 then INFO=4 : gosub 21000 : if SKILL=1 then LEVELNEXT=2 : return 
+27031 if LEVEL=6 or LEVEL=11 then LEVELNEXT=3 : return 
+27034 gosub 50000 : MESS$="" : MESS_COUNT=0 : IMUNE_COUNT=0
+27040 gosub 30000 : loke $4D2,0 : sound init : ROOM=ROOM_ST : gosub 40000
+27045 NGUN=-GUN : NGUN_Y=33
+27050 TIME_START=0 : LEVELNEXT=true : return 
+28000 logic=physic : wait vbl : paper 0 : pen 0 : clw 
+28090 wait vbl : gosub 21420 : wait vbl 
+28200 pen 1 : locate 0,2 : centre "Prepare for"
+28205 locate 0,3 : centre chr$(34)+LEVEL_NAME$+chr$(34)
+28206 locate 0,22
+28210 if SKILL=1 then SKILL$="DEAD EASY"
+28220 if SKILL=2 then SKILL$="WELL 'ARD"
+28230 if SKILL=3 then SKILL$="SUICIDE"
+28240 centre "("+SKILL$+")"
+28250 paper 0 : home 
+28260 wait vbl : fade 1,$0,$444,$753,$742,$432,$200,$300,$430,$420,$222,$444,$333,$444,$555,$0,$444 : wait 10
+28500 unpack 8,back : wait vbl 
+28541 if LEVEL>0 and LEVEL<6 then zoom back,0,0,159,100 to logic,16,40,304,160
+28542 if LEVEL>5 and LEVEL<11 then zoom back,160,0,319,100 to logic,16,40,304,160
+28543 if LEVEL>10 and LEVEL<16 then zoom back,80,100,239,199 to logic,16,40,304,160
+28550 wait vbl : screen copy logic to back : wait vbl 
+28551 if LEVEL<>1 and LEVEL<>6 and LEVEL<>11 and LEVEL<>15 then for I=(((LEVEL-1)/5)*5)+1 to LEVEL-1 : sprite (I mod 5)+5,MAPX(I),MAPY(I),9 : update : next I
+28555 sprite 1,MAPX(LEVEL),MAPY(LEVEL),7 : update : gosub 17182
+28560 wait 30 : return 
+29000 if FLSTE then loke $4D2,0 : sound init : dac stop : dac loop off : else samstop : samloop off : sound init 
+29022 if FLMUS then dreg(0)=2 : call start(3) : loke $4D2,start(3)+8
+29025 TIME=timer/50
+29035 logic=physic : wait vbl : fade 1 : wait 10 : paper 0 : pen 0 : clw 
+29036 wait vbl : gosub 21420 : wait vbl 
+29040 pen 1 : locate 0,1 : centre "Finished"
+29045 locate 0,2 : centre chr$(34)+LEVEL_NAME$+chr$(34)
+29051 wait vbl : fade 1,$0,$444,$753,$742,$432,$200,$300,$430,$420,$222,$444,$333,$444,$555,$0,$444 : wait 10
+29052 unpack 8,back : wait vbl 
+29053 if LEVEL>0 and LEVEL<6 then zoom back,0,0,159,100 to logic,16,40,304,160
+29054 if LEVEL>5 and LEVEL<11 then zoom back,160,0,319,100 to logic,16,40,304,160
+29055 if LEVEL>10 and LEVEL<16 then zoom back,80,100,239,199 to logic,16,40,304,160
+29057 wait vbl : screen copy logic to back : wait vbl 
+29060 if LEVEL<>1 and LEVEL<>6 and LEVEL<>11 and LEVEL<>15 then for I=(((LEVEL-1)/5)*5)+1 to LEVEL-1 : sprite (I mod 5)+5,MAPX(I),MAPY(I),9 : update : next I
+29070 VS#=0 : for I=1 to MXROOM : VS#=VS#+VISIT(I) : next I
+29071 VS=(VS#/MXROOM)*100 : locate 6,21 : print "ROOMS VISITED"
+29080 clear key : while mouse key : wend 
+29081 for I=0 to VS : gosub 17178 : wait 3 : if mouse key or inkey$<>"" then I=VS
+29085 locate 30,21 : A$=(str$(I)+"%")-" " : print A$; : next I : wait 20
+29090 locate 6,22 : print "KILLS"
+29100 if MDEATHS#>0 then PC=(DEATHS*100)/MDEATHS# else PC=0
+29110 clear key : while mouse key : wend 
+29120 for I=0 to PC : gosub 17178 : wait 3 : if mouse key or inkey$<>"" then I=PC
+29130 locate 30,22 : A$=(str$(I)+"%")-" " : print A$; : next I
+29140 sprite 1,MAPX(LEVEL),MAPY(LEVEL),9 : update : gosub 17188
+29280 TIME_MIN=TIME/60 : TIME_SEC=TIME mod 60
+29290 TM$=str$(TIME_MIN)-" " : TS$=str$(TIME_SEC)-" "
+29294 if TIME_MIN<10 then TM$="0"+TM$
+29295 if TIME_SEC<10 then TS$="0"+TS$
+29296 TME$=TM$+":"+TS$
+29300 locate 6,23 : print "TIME" : locate 30,23 : print TME$-" "
+29790 clear key : while mouse key : wend 
+29800 repeat : until inkey$<>"" or mouse key
+29999 fade 1 : wait 10 : paper 0 : sprite off : return 
+30000 MDEATHS#=0 : DEATHS=0 : if LEVEL<1 then error 84
+30005 L$=str$(LEVEL)-" " : if LEVEL<10 then L$="0"+L$
+30007 if REG and dir first$("DATA\REG\"+L$+".LEV",-1)<>"" then open in #2,"DATA\REG\"+L$+".LEV" : goto 30036
+30010 if REG then open in #2,"DATA\REG\HELLGATE.WAD" else open in #2,"DATA\UNREG\HELLUNRG.WAD"
+30011 input #2,SZ : pof(#2)=7 : SZ=SZ+2
+30015 if lof(#2)<=(SZ*(LEVEL-1))+7 then close #2 : error 84
+30020 pof(#2)=(SZ*(LEVEL-1))+7
+30036 input #2,LEVEL_NAME$ : gosub 28000
+30041 input #2,ROOM_ST
+30042 input #2,X,Z,B
+30043 td move 0,X,0,Z : td angle 0,0,B,0
+30044 input #2,MXROOM : input #2,TRACK
+30045 for ROOM=1 to MXROOM : VISIT(ROOM)=0 : input #2,LAMER$
+30050 for I=1 to MXITEM : input #2,A$ : if A$-" "="---" then POW_UP$(ROOM,I)="" : goto 30070
+30060 POW_UP$(ROOM,I)=A$ : input #2,X,Y : POW_X(ROOM,I)=X : POW_Y(ROOM,I)=Y
+30070 next I
+30080 for I=1 to MXBAD : input #2,A$ : if A$-" "="---" then BAD$(ROOM,I)="" : goto 30100
+30085 MDEATHS#=MDEATHS#+1
+30086 S=-1 : for K=1 to 10 : if A$=BADGUY$(K) then S=BADGUY(K)
+30087 next K : if S=-1 then 30100
+30090 BAD$(ROOM,I)=A$ : input #2,X,Y,A : BAD_X(ROOM,I)=X : BAD_Y(ROOM,I)=Y : BAD_ANG(ROOM,I)=A : BAD_STR(ROOM,I)=S*SKILL
+30100 next I
+30110 for I=1 to MXBLOK : input #2,A$ : if A$-" "="---" then BLOK$(ROOM,I)="" : goto 30130
+30120 BLOK$(ROOM,I)=A$ : input #2,X,Y,AY : BLOK_X(ROOM,I)=X : BLOK_Y(ROOM,I)=Y : BLOK_AY(ROOM,I)=AY
+30130 next I
+30140 input #2,D00RS
+30150 for I=1 to D00RS
+30160 input #2,D00R(ROOM,I),D00R_ROOM(ROOM,I),D00R_X(ROOM,I),D00R_Z(ROOM,I)
+30170 next I : D00R(ROOM,0)=D00RS
+30180 input #2,WALLS(ROOM,0)
+30190 if WALLS(ROOM,0)=1 then input #2,WALLS(ROOM,1)
+30200 if WALLS(ROOM,0)=2 then input #2,X1,Z1,X2,Z2 : DUMMY_X1=min(X1,X2) : X2=max(X1,X2) : DUMMY_Z1=min(Z1,Z2) : Z2=max(Z1,Z2) : WALLS(ROOM,1)=X2 : WALLS(ROOM,2)=Z2 : WALLS(ROOM,3)=DUMMY_X1 : WALLS(ROOM,4)=DUMMY_Z1
+30220 input #2,BRIGHT(ROOM) : BRIGHT(RM)=max(min(BRIGHT(ROOM),2),-3)
+30300 next ROOM
+30400 close #2 : BEGIN=true
+30410 return 
+35000 fade 1 : wait 10 : loke $4D2,0 : sound init : wait vbl : clw : cls back : cls logic : wait vbl : update on : synchro on : wait vbl : sprite off : wait vbl : update : cls back : cls logic : wait vbl : logic=physic : wait vbl 
+35010 unpack 8,back : wait vbl 
+35020 get palette (back) : wait vbl 
+35030 zoom back,82,107,237,150 to logic,0,50,319,199
+35035 screen copy logic to back
+35040 sprite 1,280,130,10
+35050 anim 1,"(10,5)(11,5)l" : anim on 1
+35060 move x 1,"(4,2,25)" : move y 1,"(4,3,25)" : move on 
+35065 gosub 17186
+35070 while movon(1) : wend : sprite off 
+35080 S=1 : for I=1 to 100 : if I>50 then S=2
+35085 if I=20 then fade 7,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777,$777
+35090 sprite 2,270+rnd(30)-rnd(30),110+rnd(30)-rnd(30),S : update 
+35095 if rnd(3)=0 then gosub 17182
+35096 if rnd(7)=0 then gosub 17180
+35097 next I : gosub 17180
+35100 gosub 35240
+35105 if FLMUS then dreg(0)=4 : call start(3) : loke $4D2,start(3)+8
+35110 wait 100 : colour 1,$7 : colour 2,$700 : colour 3,0
+35120 def scroll 1,0,0 to 320,200,0,-1
+35130 for I=0 to 36
+35140 for W=0 to 7 : screen copy 13,0,I*8+W,320,I*8+W+1 to logic,0,199 : scroll 1 : wait 4 : next W
+35150 for W=0 to 7 : scroll 1 : wait 4 : next W
+35160 next I
+35170 clw : cls physic : cls back : colour 1,$777
+35180 pen 1 : home : print "THE" : print "END"
+35190 zoom logic,0,0,25,16 to logic,60,30,260,170
+35200 screen copy logic to back
+35210 ink 0 : bar 0,0 to 32,16
+35220 fade 3,,$700 : wait 250 : fade 3,,$777 : wait 60
+35230 fade 3 : wait 40 : loke $4D2,0 : sound init : update off : synchro off : logic=back : return 
+35240 cls logic : cls back : pen 3
+35250 home : centre "THE EVIL SWAMP DEMON" : print 
+35260 centre "HAS BEEN BANISHED FROM THIS" : print 
+35270 centre "DIMENSION FOR ALL TIME." : print : print 
+35280 centre "YOU RETURN TO EARTH. WHERE" : print 
+35290 centre "A HERO'S WELCOME AWAITS..." : print : print : print 
+35300 pen 1 : centre "HELLGATE" : print 
+35310 centre "(C) 1996-98 SMARTSOFT" : print : print : pen 2
+35320 centre "PROGRAMMING - DAVID WALTERS" : print 
+35330 centre "GRAPHICS - DAVID WALTERS + IAN WALTERS" : print 
+35340 centre "MUSIC - MAD MAX" : print 
+35350 centre "DESIGN - DAVID WALTERS + MATTHEW KVASNIK"
+35360 centre "LEVELS - DAVID WALTERS + IAN WALTERS" : print 
+35370 print : centre "TESTING" : print : centre "DAVID WALTERS + MATTHEW KVASNIK" : print 
+35380 centre "IAN WALTERS + BRENDAN McQUILLAN" : print 
+35390 centre "NEIL KVASNIK + TERRY KVASNIK" : print 
+35400 screen copy back to 13 : wait vbl 
+35410 cls logic : cls back : return 
+40000 if ROOM>MXROOM or ROOM<1 then E=71 : L=40000 : goto 65010
+40010 if (LEVEL=5 and ROOM=2) then BOSS$="SUPER SEVOR"
+40011 if (LEVEL=14 and ROOM=2) then BOSS$="SWAMP DEMON"
+40020 if (LEVEL=5 and ROOM=2) or (LEVEL=14 and ROOM=2) then clw : colour 1,$0 : pen 1 : locate 0,11 : centre "Prepare to face the mighty" : cdown : cdown : centre BOSS$ : wait vbl : fade 10,,$700 : loke $4D2,0 : sound init : gosub 17198 : wait 130
+40030 for I=1 to 3 : if POW_UP$(ROOM,I)="" then 40050
+40040 td object 12+I,POW_UP$(ROOM,I),POW_X(ROOM,I),-200,POW_Y(ROOM,I),0,0,0
+40050 next I
+40060 for I=1 to MXBAD : if BAD$(ROOM,I)="" then 40080
+40065 Y=0 : if BAD$(ROOM,I)="junk" then Y=-400
+40070 td object 15+I,BAD$(ROOM,I),BAD_X(ROOM,I),Y,BAD_Y(ROOM,I),0,BAD_ANG(ROOM,I),0
+40080 next I
+40090 for I=1 to 8 : if BLOK$(ROOM,I)="" then 40110
+40100 td object I,BLOK$(ROOM,I),BLOK_X(ROOM,I),0,BLOK_Y(ROOM,I),0,BLOK_AY(ROOM,I),0
+40110 next I
+40115 BRIGHT=BRIGHT(ROOM) : gosub 42080
+40116 VISIT(ROOM)=1
+40117 if GUN=4 then FRAME=1 : SHOT=0
+40120 sprite off : update : return 
+41000 for I=1 to 8 : if BLOK$(ROOM,I)<>"" then td kill I
+41035 next I
+41040 for I=1 to 3 : if POW_UP$(ROOM,I)<>"" then td kill I+12
+41045 next I
+41050 for I=1 to MXBAD : if BAD$(ROOM,I)<>"" then BAD_ANG(ROOM,I)=td attitude b(I+15) : BAD_X(ROOM,I)=td position x(I+15) : BAD_Y(ROOM,I)=td position z(I+15) : td kill I+15
+41055 next I
+41060 if MISSLE then MISSLE=0 : td kill 9
+41070 return 
+42000 for E=0 to 2 : for BRIGHT=-3 to 3
+42001 XP=hunt(start(1) to start(1)+length(1),"PALT")+4
+42005 for C=1 to 15 : PAL(E,BRIGHT+3,C)=deek(C*2+XP)
+42010 C$=hex$(PAL(E,BRIGHT+3,C),3)-"$" : R=val("$"+left$(C$,1)) : G=val("$"+mid$(C$,2,1)) : B=val("$"+right$(C$,1))
+42020 R=min(max(R+BRIGHT,0),7) : if E=2 or BRIGHT=3 then R=min(R+1,7)
+42030 G=min(max(G+BRIGHT,0),7) : if E=1 or BRIGHT=3 then G=min(G+1,7)
+42040 B=min(max(B+BRIGHT,0),7) : if E=1 or BRIGHT=3 then B=min(B+1,7)
+42050 C$=str$(R)+str$(G)+str$(B) : C$=C$-" " : C$="$"+C$
+42060 PAL(E,BRIGHT+3,C)=val(C$)
+42070 next C : next BRIGHT : next E : return 
+42080 logic=physic : wait vbl : cls logic : wait vbl 
+42090 if IMUNE_COUNT>0 then BRIGHT=2
+42095 for I=1 to 15 : colour I,PAL((LEVEL-1)/5,BRIGHT+3,I) : next I
+42100 logic=back : wait vbl 
+42110 return 
+43000 for J=1 to MXROOM
+43035 for K=1 to MXBAD : if BAD$(J,K)="" or ROOM<>J then 43040
+43036 BAD_ANG(J,K)=td attitude b(K+15) : BAD_X(J,K)=td position x(K+15) : BAD_Y(J,K)=td position z(K+15)
+43040 A$=BAD$(J,K)+","+str$(BAD_STR(J,K))+","+str$(BAD_ANG(J,K))+","+str$(BAD_X(J,K))+","+str$(BAD_Y(J,K))
+43050 print #1,A$
+43060 next K
+43070 for K=1 to MXITEM
+43080 print #1,POW_UP$(J,K)
+43090 next K
+43095 for K=1 to MXBLOK : print #1,BLOK$(J,K) : next K
+43100 next J
+43110 return 
+44000 for J=1 to MXROOM
+44035 for K=1 to MXBAD
+44050 input #1,BAD$(J,K),BAD_STR(J,K),BAD_ANG(J,K),BAD_X(J,K),BAD_Y(J,K)
+44060 next K : for K=1 to MXITEM
+44065 input #1,POW_UP$(J,K) : next K : for K=1 to MXBLOK
+44066 input #1,BLOK$(J,K) : next K
+44070 next J
+44080 return 
+45000 if HEALTH=OLD_STATBAR_H and AMMO(GUN)=OLD_STATBAR_G and ARMOUR=OLD_STATBAR_A and KY=OLD_KY and sgn(IMUNE_COUNT)=OLD_IMUNE then 45070
+45024 STATBAR_G=AMMO(GUN)
+45025 HEALTH=max(HEALTH,0)
+45030 screen copy 5,0,167,320,200 to 5,0,133
+45031 if STATBAR_G>9 then screen$(5,16,138)=NUM$(STATBAR_G/10+1)
+45032 screen$(5,32,138)=NUM$(STATBAR_G mod 10+1)
+45034 if HEALTH>99 then screen$(5,80,138)=NUM$(HEALTH/100+1)
+45036 if HEALTH>9 then screen$(5,96,138)=NUM$((HEALTH mod 100)/10+1)
+45037 screen$(5,112,138)=NUM$(HEALTH mod 10+1)
+45051 if ARMOUR>99 then screen$(5,256,138)=NUM$(ARMOUR/100+1)
+45056 if ARMOUR>9 then screen$(5,272,138)=NUM$((ARMOUR mod 100)/10+1)
+45057 screen$(5,288,138)=NUM$(ARMOUR mod 10+1)
+45060 if KY then screen$(5,176,151)=KY$
+45061 FACE=0
+45062 if HEALTH<75 then FACE=1
+45063 if HEALTH<50 then FACE=2
+45064 if HEALTH<25 then FACE=3
+45065 if IMUNE_COUNT>0 then FACE=4
+45066 if FACE then screen$(5,144,134)=FACE$(FACE)
+45069 OLD_STATBAR_H=HEALTH : OLD_STATBAR_G=AMMO(GUN) : OLD_STATBAR_A=ARMOUR : OLD_KY=KY : OLD_IMUNE=sgn(IMUNE_COUNT)
+45070 return 
+46000 R=td range(0,N) : if R>800 then return 
+46040 P$=POW_UP$(ROOM,N-12) : if P$="" then return 
+46045 F=0
+46050 if P$="key" and KY=0 then MESS$="YOU GOT A KEYCARD!" : KY=true : F=1
+46055 if P$="medipack" and HEALTH<100 then HEALTH=HEALTH+15 : HEALTH=min(HEALTH,100) : F=1 : MESS$="MEDI-PACK (+15%)"
+46056 if P$="armour" and ARMOUR<100 then ARMOUR=ARMOUR+50 : ARMOUR=min(ARMOUR,100) : F=1 : MESS$="ARMOUR (+50%)"
+46060 if P$="shotgun" and AMMO(2)=-1 then MESS$="YOU GOT THE SHOTGUN!" : AMMO(2)=16 : F=2 : NGUN=2 : FRAME=1 : SHOT=0 : goto 46190
+46061 if P$="shotgun" and AMMO(2)>=0 and AMMO(2)<50 then MESS$="SHOTGUN SHELLS (+16)" : AMMO(2)=AMMO(2)+16 : AMMO(2)=min(AMMO(2),50) : F=2
+46062 if P$="pistol" and AMMO(1)<99 then MESS$="PISTOL CLIP (+25)" : AMMO(1)=AMMO(1)+25 : AMMO(1)=min(AMMO(1),99) : F=2
+46070 if P$="launcher" and AMMO(5)=-1 then MESS$="IT'S THE ROCKET LAUNCHER, OH YES!" : AMMO(5)=4 : F=2 : NGUN=5 : SHOT=0 : FRAME=1 : goto 46190
+46071 if P$="launcher" and AMMO(5)>=0 and AMMO(5)<20 then MESS$="ROCKETS (+4)" : AMMO(5)=AMMO(5)+4 : AMMO(5)=min(AMMO(5),20) : F=2
+46072 if P$="chaingun" and AMMO(3)=-1 then MESS$="YOU GOT THE CHAINGUN!" : AMMO(3)=30 : F=2 : NGUN=3 : SHOT=0 : FRAME=1 : goto 46190
+46073 if P$="chaingun" and AMMO(3)>=0 and AMMO(3)<99 then MESS$="CHAINGUN BULLETS (+30)" : AMMO(3)=AMMO(3)+30 : AMMO(3)=min(AMMO(3),99) : F=2
+46074 if P$="rifle" and AMMO(4)=-1 then MESS$="YOU GOT THE RIFLE!" : AMMO(4)=5 : F=2 : NGUN=4 : FRAME=1 : SHOT=0 : goto 46190
+46075 if P$="rifle" and AMMO(4)>=0 and AMMO(4)<30 then MESS$="RIFLE BULLETS (+5)" : AMMO(4)=AMMO(4)+5 : AMMO(4)=min(AMMO(4),30) : F=2
+46080 if P$="immune" then MESS$="YOU'RE IMMUNE!" : F=1 : IMUNE_COUNT=50 : logic=physic : gosub 42090
+46190 if F=1 then gosub 17190 : SC0L=$141 : td kill N : POW_UP$(ROOM,N-12)=""
+46191 if F=2 then gosub 17184 : SC0L=$141 : td kill N : POW_UP$(ROOM,N-12)=""
+46200 return 
+47000 G=0 : for I=5 to 1 step-1
+47040 if AMMO(I)>0 then G=I : I=0
+47050 next I : if G>0 then NGUN=G
+47060 return 
+50000 td clear all : gosub 3200
+50010 td load "1x3" : td load "doorx3" : td load "lockx3" : td load "1x3_strp" : td load "1x3_pane" : td load "brwn3" : td load "brwn3_st" : td load "brwndoor" : td load "brwnlock" : td load "chaingun"
+50020 td load "shotgun" : td load "rifle" : td load "junk" : if REG then td load "launcher" : td load "rocket" : td load "immune" : td load "sevor"
+50030 td load "key" : td load "medipack" : td load "armour" : td load "hell"
+50040 td load "death" : td load "mutant" : td load "venom" : td load "kak"
+50050 if LEVEL=5 then td load "ssevor"
+50060 if LEVEL=14 then td load "swdemon"
+50080 if LEVEL=10 then td load "titan"
+50090 if LEVEL=13 then td load "alacondr"
+50100 if LEVEL<>5 and LEVEL<>10 and LEVEL<>13 and LEVEL<>14 then td load "exit" : td load "pistol"
+50110 return 
+65000 E=errn : L=errl
+65010 loke $4D2,0 : sound init : logic=physic : hide on : key off : mode 0 : curs off : click off : auto back off : pen 1 : colour 1,$333 : colour 2,$700
+65040 F=0 : if ST0S then break on 
+65050 if E<>48 and (L<50000 or L>=60000) and E<>5 and E<>2 and E<>8 and E<>51 and E<>84 then 65231
+65060 locate 1,9 : square 38,5,1 : pen 2
+65070 if E=48 or (L>=50000 and L<60000) then centre "PLEASE INSERT HELLGATE DISK!" : F=1
+65071 if E=5 then centre "AN OBJECT IN THIS ROOM IS INVALID!"
+65072 if E=51 then centre "DISK FULL, BYE BYE!"
+65073 if E=2 or E=8 then centre "OUT OF MEMORY!"+str$(L)
+65074 if E=84 then centre "LEVEL NOT FOUND!" : LEVEL=1 : cdown : cdown : centre "press any key..." : wait key : resume 30000
+65075 if E=71 then centre "ROOM NO. OUT OF BOUNDS"
+65200 cdown : cdown : if F=1 then centre "press any key..." else centre "please reset"
+65210 goto 65232
+65231 print "Error :";E,"in line :";L : print "(In room :";ROOM;")" : print : print "Please report this error" : print "to SmartSOFT..." : print "(See Text file for details)." : F=0
+65232 break off : wait key 
+65235 if F=1 then resume L
+65236 if ST0S=true then erase 1 : erase 3 : erase 5 : erase 8 : erase 10 : erase 12 : end 
+65240 goto 65240
